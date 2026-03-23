@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matrix · Todo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;1,9..144,300&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    :root {
+      --bg:      #0b0c0f;
+      --surf:    #13141a;
+      --surf2:   #1c1d25;
+      --border:  rgba(255,255,255,0.07);
+      --text:    #eeedf4;
+      --text2:   #7e7e95;
+      --text3:   #3e3e52;
+      --accent:  #c9a96e;
+
+      --q1: #f0506e; --q1-bg: rgba(240,80,110,0.09); --q1-b: rgba(240,80,110,0.3);
+      --q2: #00cec9; --q2-bg: rgba(0,206,201,0.09);  --q2-b: rgba(0,206,201,0.3);
+      --q3: #feca57; --q3-bg: rgba(254,202,87,0.09);  --q3-b: rgba(254,202,87,0.3);
+      --q4: #636e72; --q4-bg: rgba(99,110,114,0.09); --q4-b: rgba(99,110,114,0.3);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── GRAIN OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 300px;
+    }
+
+    .app { min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── HEADER ── */
+    .header {
+      padding: 28px 40px 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .header-left { display: flex; flex-direction: column; gap: 2px; }
+
+    .logo {
+      font-family: 'Fraunces', serif;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .logo span {
+      color: var(--accent);
+      font-style: italic;
+    }
+
+    .logo-sub {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+
+    /* ── VIEW TOGGLE ── */
+    .view-toggle {
+      display: flex;
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .view-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 7px 16px;
+      border-radius: 7px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: var(--text2);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .view-btn:hover { color: var(--text); }
+
+    .view-btn.active {
+      background: var(--surf2);
+      color: var(--text);
+    }
+
+    .view-btn svg { width: 13px; height: 13px; }
+
+    /* ── CONTAINER ── */
+    .container {
+      flex: 1;
+      padding: 24px 40px 60px;
+      max-width: 1100px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ── INPUT BAR ── */
+    .input-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .input-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text3);
+      pointer-events: none;
+    }
+
+    .todo-input {
+      width: 100%;
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      padding: 14px 16px 14px 44px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .todo-input::placeholder { color: var(--text3); }
+
+    .todo-input:focus {
+      border-color: rgba(201,169,110,0.4);
+      box-shadow: 0 0 0 3px rgba(201,169,110,0.07);
+    }
+
+    .add-btn {
+      background: var(--accent);
+      color: #0b0c0f;
+      border: none;
+      border-radius: 12px;
+      padding: 0 22px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      white-space: nowrap;
+    }
+
+    .add-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+    .add-btn:active { transform: translateY(0); }
+
+    /* ── FILTER TABS ── */
+    .filter-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 4px;
+    }
+
+    .filter-tab {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      color: var(--text2);
+      transition: all 0.2s;
+    }
+
+    .filter-tab:hover { color: var(--text); }
+    .filter-tab.active         { background: var(--surf2); color: var(--text); }
+    .filter-tab.active-urgent  { background: var(--q1-bg); color: var(--q1); border: 1px solid var(--q1-b); }
+    .filter-tab.active-important { background: var(--q2-bg); color: var(--q2); border: 1px solid var(--q2-b); }
+
+    .todo-count {
+      font-size: 12px;
+      color: var(--text3);
+      font-weight: 500;
+    }
+
+    /* ── TODO LIST ── */
+    .todo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .todo-card {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color 0.2s, opacity 0.2s;
+      animation: slideIn 0.25s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .todo-card:hover { border-color: rgba(255,255,255,0.12); }
+    .todo-card.completed { opacity: 0.45; }
+
+    /* custom checkbox */
+    .check-btn {
+      flex-shrink: 0;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--text3);
+      background: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .check-btn:hover { border-color: var(--text2); }
+    .check-btn.done { border-color: var(--accent); background: var(--accent); }
+    .check-btn svg { color: #0b0c0f; }
+
+    .todo-text {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.5;
+      color: var(--text);
+      transition: color 0.2s;
+    }
+
+    .todo-card.completed .todo-text {
+      text-decoration: line-through;
+      color: var(--text3);
+    }
+
+    /* tag chips */
+    .tag-chips {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .chip {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.18s;
+      white-space: nowrap;
+    }
+
+    .chip-urgent { background: var(--q1-bg); color: var(--q1); border-color: var(--q1-b); }
+    .chip-urgent.off { background: transparent; color: var(--text3); border-color: var(--border); }
+    .chip-urgent.off:hover { border-color: var(--q1-b); color: var(--q1); }
+
+    .chip-import { background: var(--q2-bg); color: var(--q2); border-color: var(--q2-b); }
+    .chip-import.off { background: transparent; color: var(--text3); border-color: var(--border); }
+    .chip-import.off:hover { border-color: var(--q2-b); color: var(--q2); }
+
+    /* delete btn */
+    .del-btn {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text3);
+      padding: 4px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .del-btn:hover { color: var(--q1); background: var(--q1-bg); }
+
+    /* ── QUADRANT INDICATOR ── */
+    .q-dot {
+      flex-shrink: 0;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+
+    /* ── EMPTY STATE ── */
+    .empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text3);
+    }
+
+    .empty-icon { font-size: 36px; margin-bottom: 12px; }
+
+    .empty p { font-size: 14px; line-height: 1.7; }
+
+    /* ── MATRIX VIEW ── */
+    .matrix-header {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .matrix-title {
+      font-family: 'Fraunces', serif;
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--text2);
+      font-style: italic;
+    }
+
+    .matrix-axes {
+      display: grid;
+      grid-template-columns: 48px 1fr 1fr;
+      grid-template-rows: 48px 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .axis-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .axis-top { }
+    .axis-side {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+    }
+
+    .q-card {
+      border: 1px solid;
+      border-radius: 14px;
+      padding: 18px;
+      min-height: 200px;
+      transition: border-color 0.2s;
+    }
+
+    .q-card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .q-num {
+      font-family: 'Fraunces', serif;
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .q-labels { }
+
+    .q-name {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 2px;
+    }
+
+    .q-desc {
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.3px;
+      opacity: 0.6;
+    }
+
+    .q-badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: 5px;
+      background: rgba(255,255,255,0.07);
+      color: var(--text2);
+    }
+
+    .q-hint {
+      font-size: 11px;
+      font-weight: 500;
+      opacity: 0.55;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+
+    .q-items { display: flex; flex-direction: column; gap: 6px; }
+
+    .q-item {
+      background: rgba(255,255,255,0.04);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn 0.2s ease;
+    }
+
+    .q-item-check {
+      flex-shrink: 0;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      border: 1.5px solid;
+      background: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .q-item-check.done { }
+    .q-item-text {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 1.4;
+      word-break: break-all;
+    }
+
+    .q-item.completed .q-item-text {
+      text-decoration: line-through;
+      opacity: 0.4;
+    }
+
+    .q-item-del {
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text3);
+      padding: 2px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      transition: color 0.15s;
+    }
+
+    .q-item-del:hover { color: var(--q1); }
+
+    .q-empty {
+      font-size: 12px;
+      color: var(--text3);
+      text-align: center;
+      padding: 20px 0;
+      font-style: italic;
+      font-family: 'Fraunces', serif;
+      font-weight: 300;
+    }
+
+    /* ── UNCLASSIFIED SECTION ── */
+    .unclassified-section {
+      margin-top: 20px;
+      padding: 20px;
+      background: var(--surf);
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+    }
+
+    .unclassified-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 12px;
+    }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 24px;
+      padding: 16px 20px;
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .stat-num {
+      font-family: 'Fraunces', serif;
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+
+    .stat-divider {
+      width: 1px;
+      background: var(--border);
+      align-self: stretch;
+    }
+
+    /* ── DRAG & DROP ── */
+    .drag-handle {
+      cursor: grab;
+      color: var(--text3);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      transition: color 0.15s;
+    }
+    .drag-handle:hover { color: var(--text2); }
+    .drag-handle:active { cursor: grabbing; }
+
+    .todo-card.dragging { opacity: 0.3; transform: scale(0.98); }
+    .todo-card.drag-over {
+      border-color: var(--accent) !important;
+      box-shadow: 0 0 0 2px rgba(201,169,110,0.15);
+    }
+    .q-item.dragging { opacity: 0.25; }
+    .q-item.drag-over { outline: 1.5px solid var(--accent); outline-offset: 1px; }
+
+    /* ── RANK BADGE ── */
+    .rank-badge {
+      flex-shrink: 0;
+      font-family: 'Fraunces', serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text3);
+      width: 18px;
+      text-align: center;
+      line-height: 1;
+    }
+
+    /* ── Q4 ACTION SYSTEM ── */
+    .q4-philosophy {
+      font-size: 11px;
+      line-height: 1.6;
+      color: var(--text2);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+    .q4-philosophy strong { color: var(--text); font-weight: 600; }
+
+    .q4-actions {
+      display: flex;
+      gap: 4px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .q4-action-btn {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      padding: 3px 9px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--text3);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .q4-action-btn:hover { color: var(--text2); border-color: rgba(255,255,255,0.15); }
+    .q4-action-btn.act-eliminate         { color: var(--q1); border-color: var(--q1-b); background: var(--q1-bg); }
+    .q4-action-btn.act-limit             { color: var(--q3); border-color: var(--q3-b); background: var(--q3-bg); }
+    .q4-action-btn.act-delegate          { color: var(--q2); border-color: var(--q2-b); background: var(--q2-bg); }
+    .q4-action-btn.act-later             { color: var(--text2); border-color: rgba(255,255,255,0.15); background: var(--surf2); }
+
+    .q4-action-tag {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid;
+      flex-shrink: 0;
+    }
+    .q4-tag-eliminate { color: var(--q1); border-color: var(--q1-b); background: var(--q1-bg); }
+    .q4-tag-limit     { color: var(--q3); border-color: var(--q3-b); background: var(--q3-bg); }
+    .q4-tag-delegate  { color: var(--q2); border-color: var(--q2-b); background: var(--q2-bg); }
+    .q4-tag-later     { color: var(--text2); border-color: rgba(255,255,255,0.12); background: var(--surf2); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 720px) {
+      .header { padding: 20px 20px 0; }
+      .container { padding: 20px 20px 40px; }
+      .matrix-axes { display: flex; flex-direction: column; }
+      .axis-label, .axis-side { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const STORAGE_KEY = 'matrix-todo-v3';
+
+const load = () => { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; } };
+const save = (d) => localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+
+const QUADRANTS = [
+  { urgent: true,  important: true,  label: '今すぐ実行',  desc: '緊急かつ重要',       en: 'DO FIRST',  num: 'I',   hint: '自分で対処しましょう。先延ばしにすると危機になります。',   color: 'var(--q1)', bg: 'var(--q1-bg)', border: 'var(--q1-b)' },
+  { urgent: false, important: true,  label: '計画を立てる', desc: '重要だが急ぎではない', en: 'SCHEDULE',  num: 'II',  hint: 'いつやるか、具体的なスケジュールを決めておきましょう。', color: 'var(--q2)', bg: 'var(--q2-bg)', border: 'var(--q2-b)' },
+  { urgent: true,  important: false, label: '委任する',    desc: '緊急だが重要度が低い', en: 'DELEGATE',  num: 'III', hint: 'できれば他の人に任せ、自分の関与を減らしましょう。',     color: 'var(--q3)', bg: 'var(--q3-bg)', border: 'var(--q3-b)' },
+  { urgent: false, important: false, label: '意識的に管理', desc: '非緊急 · 非重要',    en: 'MANAGE',    num: 'IV',  hint: '時間を意識的に制限するか、徐々に減らしていきましょう。', isQ4: true, color: 'var(--q4)', bg: 'var(--q4-bg)', border: 'var(--q4-b)' },
+];
+
+// Icons (inline SVG components)
+const IconPlus = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/>
+  </svg>
+);
+const IconCheck = ({ size = 10 }) => (
+  <svg width={size} height={size} viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="1.5,6.5 4.5,9.5 10.5,2.5"/>
+  </svg>
+);
+const IconX = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <line x1="2" y1="2" x2="12" y2="12"/><line x1="12" y1="2" x2="2" y2="12"/>
+  </svg>
+);
+const IconList = () => (
+  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+    <line x1="4" y1="3" x2="12" y2="3"/><line x1="4" y1="6.5" x2="12" y2="6.5"/><line x1="4" y1="10" x2="12" y2="10"/>
+    <circle cx="1.5" cy="3" r="1"/><circle cx="1.5" cy="6.5" r="1"/><circle cx="1.5" cy="10" r="1"/>
+  </svg>
+);
+const IconGrid = () => (
+  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+    <rect x="1" y="1" width="4.5" height="4.5" rx="1"/><rect x="7.5" y="1" width="4.5" height="4.5" rx="1"/>
+    <rect x="1" y="7.5" width="4.5" height="4.5" rx="1"/><rect x="7.5" y="7.5" width="4.5" height="4.5" rx="1"/>
+  </svg>
+);
+const IconPencil = () => (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M7 2l3 3L4 11H1V8L7 2z"/>
+  </svg>
+);
+
+function App() {
+  const [todos, setTodos] = useState(load);
+  const [view, setView] = useState('list');
+  const [input, setInput] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [urgentFilter, setUrgentFilter] = useState(false);
+  const [importantFilter, setImportantFilter] = useState(false);
+  const [dragOverId, setDragOverId] = useState(null);
+  const dragId = useRef(null);
+  const inputRef = useRef();
+
+  useEffect(() => { save(todos); }, [todos]);
+
+  // ドラッグで順序変更: fromIdの項目をtoIdの位置に移動
+  const reorder = useCallback((fromId, toId) => {
+    setTodos(prev => {
+      const arr = [...prev];
+      const from = arr.findIndex(t => t.id === fromId);
+      const to   = arr.findIndex(t => t.id === toId);
+      if (from === -1 || to === -1) return prev;
+      arr.splice(to, 0, arr.splice(from, 1)[0]);
+      return arr;
+    });
+  }, []);
+
+  const onDragStart = useCallback((id, e) => {
+    dragId.current = id;
+    e.dataTransfer.effectAllowed = 'move';
+  }, []);
+
+  const onDragOver = useCallback((id, e) => {
+    e.preventDefault();
+    setDragOverId(id);
+  }, []);
+
+  const onDrop = useCallback((targetId, e) => {
+    e.preventDefault();
+    if (dragId.current && dragId.current !== targetId) {
+      reorder(dragId.current, targetId);
+    }
+    dragId.current = null;
+    setDragOverId(null);
+  }, [reorder]);
+
+  const onDragEnd = useCallback(() => {
+    dragId.current = null;
+    setDragOverId(null);
+  }, []);
+
+  const drag = { onDragStart, onDragOver, onDrop, onDragEnd, dragOverId, dragId };
+  const actions = { setQ4Action };
+
+  const addTodo = useCallback(() => {
+    const text = input.trim();
+    if (!text) return;
+    setTodos(prev => [{
+      id: Date.now(),
+      text,
+      urgent: false,
+      important: false,
+      classified: false,
+      completed: false,
+      q4action: null,   // 'eliminate' | 'limit' | 'delegate' | 'later'
+    }, ...prev]);
+    setInput('');
+    inputRef.current?.focus();
+  }, [input]);
+
+  const toggleField = (id, field) => {
+    setTodos(prev => prev.map(t => {
+      if (t.id !== id) return t;
+      const next = { ...t, [field]: !t[field] };
+      next.classified = next.urgent || next.important;
+      return next;
+    }));
+  };
+
+  const deleteTodo = (id) => setTodos(prev => prev.filter(t => t.id !== id));
+
+  const setQ4Action = (id, action) => {
+    setTodos(prev => prev.map(t =>
+      t.id === id ? { ...t, q4action: t.q4action === action ? null : action } : t
+    ));
+  };
+
+  const toggleComplete = (id) => {
+    setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  };
+
+  const filtered = todos.filter(t => {
+    if (filter === 'active' && t.completed)  return false;
+    if (filter === 'done'   && !t.completed) return false;
+    if (urgentFilter   && !t.urgent)    return false;
+    if (importantFilter && !t.important) return false;
+    return true;
+  });
+
+  const active  = todos.filter(t => !t.completed).length;
+  const done    = todos.filter(t => t.completed).length;
+  const classified = todos.filter(t => t.classified).length;
+
+  return (
+    <div className="app">
+      {/* Header */}
+      <header className="header">
+        <div className="header-left">
+          <div className="logo">Matrix<span>·</span>Todo</div>
+          <div className="logo-sub">アイゼンハワーマトリクス</div>
+        </div>
+        <div className="view-toggle">
+          <button className={`view-btn${view === 'list' ? ' active' : ''}`} onClick={() => setView('list')}>
+            <IconList /> リスト
+          </button>
+          <button className={`view-btn${view === 'matrix' ? ' active' : ''}`} onClick={() => setView('matrix')}>
+            <IconGrid /> マトリクス
+          </button>
+        </div>
+      </header>
+
+      {/* Main */}
+      <div className="container">
+        {/* Stats */}
+        <div className="stats-bar">
+          <div className="stat-item">
+            <div className="stat-num" style={{ color: 'var(--text)' }}>{todos.length}</div>
+            <div className="stat-label">すべて</div>
+          </div>
+          <div className="stat-divider"/>
+          <div className="stat-item">
+            <div className="stat-num" style={{ color: 'var(--q1)' }}>{active}</div>
+            <div className="stat-label">進行中</div>
+          </div>
+          <div className="stat-divider"/>
+          <div className="stat-item">
+            <div className="stat-num" style={{ color: 'var(--accent)' }}>{done}</div>
+            <div className="stat-label">完了</div>
+          </div>
+          <div className="stat-divider"/>
+          <div className="stat-item">
+            <div className="stat-num" style={{ color: 'var(--q2)' }}>{classified}</div>
+            <div className="stat-label">分類済み</div>
+          </div>
+        </div>
+
+        {/* Input */}
+        <div className="input-bar">
+          <div className="input-wrap">
+            <span className="input-icon"><IconPencil /></span>
+            <input
+              ref={inputRef}
+              className="todo-input"
+              placeholder="タスクを入力してください..."
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && addTodo()}
+            />
+          </div>
+          <button className="add-btn" onClick={addTodo}>+ 追加</button>
+        </div>
+
+        {/* Views */}
+        {view === 'list' ? (
+          <ListView
+            todos={filtered}
+            filter={filter}
+            setFilter={setFilter}
+            urgentFilter={urgentFilter}
+            setUrgentFilter={setUrgentFilter}
+            importantFilter={importantFilter}
+            setImportantFilter={setImportantFilter}
+            onToggleField={toggleField}
+            onDelete={deleteTodo}
+            onComplete={toggleComplete}
+            drag={drag}
+            actions={actions}
+          />
+        ) : (
+          <MatrixView
+            todos={todos}
+            onToggleField={toggleField}
+            onDelete={deleteTodo}
+            onComplete={toggleComplete}
+            drag={drag}
+            actions={actions}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────── LIST VIEW ─────────────────────── */
+function ListView({ todos, filter, setFilter, urgentFilter, setUrgentFilter, importantFilter, setImportantFilter, onToggleField, onDelete, onComplete, drag, actions }) {
+  return (
+    <div>
+      <div className="filter-row">
+        <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+          <div className="filter-tabs">
+            {[['all','すべて'], ['active','進行中'], ['done','完了']].map(([v, l]) => (
+              <button
+                key={v}
+                className={`filter-tab${filter === v ? ' active' : ''}`}
+                onClick={() => setFilter(v)}
+              >{l}</button>
+            ))}
+          </div>
+          <span style={{ color:'var(--text3)', fontSize:'13px', userSelect:'none' }}>|</span>
+          <div className="filter-tabs">
+            <button
+              className={`filter-tab${urgentFilter ? ' active-urgent' : ''}`}
+              onClick={() => setUrgentFilter(v => !v)}
+            >緊急</button>
+            <button
+              className={`filter-tab${importantFilter ? ' active-important' : ''}`}
+              onClick={() => setImportantFilter(v => !v)}
+            >重要</button>
+          </div>
+        </div>
+        <div className="todo-count">{todos.length}件 · ドラッグで順番変更</div>
+      </div>
+
+      <div className="todo-list">
+        {todos.length === 0 ? (
+          <div className="empty">
+            <div className="empty-icon">◎</div>
+            <p>タスクがありません。<br/>上からタスクを追加してください。</p>
+          </div>
+        ) : todos.map((t, i) => (
+          <TodoCard
+            key={t.id}
+            todo={t}
+            rank={i + 1}
+            onToggleField={onToggleField}
+            onDelete={onDelete}
+            onComplete={onComplete}
+            drag={drag}
+            actions={actions}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const IconGrip = () => (
+  <svg width="12" height="16" viewBox="0 0 12 16" fill="none">
+    <circle cx="4" cy="4"  r="1.5" fill="currentColor"/>
+    <circle cx="4" cy="8"  r="1.5" fill="currentColor"/>
+    <circle cx="4" cy="12" r="1.5" fill="currentColor"/>
+    <circle cx="8" cy="4"  r="1.5" fill="currentColor"/>
+    <circle cx="8" cy="8"  r="1.5" fill="currentColor"/>
+    <circle cx="8" cy="12" r="1.5" fill="currentColor"/>
+  </svg>
+);
+
+const Q4_ACTION_LABELS = {
+  eliminate: '削除',
+  limit:     '時間制限',
+  delegate:  '委任',
+  later:     '後で',
+};
+const Q4_ACTION_CLASS = {
+  eliminate: 'q4-tag-eliminate',
+  limit:     'q4-tag-limit',
+  delegate:  'q4-tag-delegate',
+  later:     'q4-tag-later',
+};
+
+function TodoCard({ todo, rank, onToggleField, onDelete, onComplete, drag, actions }) {
+  const { onDragStart, onDragOver, onDrop, onDragEnd, dragOverId, dragId } = drag;
+  const isDragging = dragId.current === todo.id;
+  const isDragOver = dragOverId === todo.id;
+
+  const q = todo.classified
+    ? QUADRANTS.find(q => q.urgent === todo.urgent && q.important === todo.important)
+    : null;
+  const isQ4 = q && q.isQ4;
+
+  return (
+    <div
+      className={`todo-card${todo.completed ? ' completed' : ''}${isDragging ? ' dragging' : ''}${isDragOver ? ' drag-over' : ''}`}
+      draggable
+      onDragStart={e => onDragStart(todo.id, e)}
+      onDragOver={e => onDragOver(todo.id, e)}
+      onDrop={e => onDrop(todo.id, e)}
+      onDragEnd={onDragEnd}
+    >
+      {/* Drag handle */}
+      <div className="drag-handle" title="ドラッグで順番変更"><IconGrip /></div>
+
+      {/* Rank */}
+      <div className="rank-badge">{rank}</div>
+
+      {/* Quadrant dot */}
+      {q ? (
+        <div className="q-dot" style={{ background: q.color }} title={q.label} />
+      ) : (
+        <div className="q-dot" style={{ background: 'var(--text3)' }} title="未分類" />
+      )}
+
+      {/* Complete check */}
+      <button
+        className={`check-btn${todo.completed ? ' done' : ''}`}
+        onClick={() => onComplete(todo.id)}
+        title="完了を切り替え"
+      >
+        {todo.completed && <IconCheck />}
+      </button>
+
+      {/* Text */}
+      <div className="todo-text">{todo.text}</div>
+
+      {/* Q4 action tag (list view) */}
+      {isQ4 && todo.q4action && (
+        <span className={`q4-action-tag ${Q4_ACTION_CLASS[todo.q4action]}`}>
+          {Q4_ACTION_LABELS[todo.q4action]}
+        </span>
+      )}
+
+      {/* Chips */}
+      <div className="tag-chips">
+        <button
+          className={`chip chip-urgent${!todo.urgent ? ' off' : ''}`}
+          onClick={() => onToggleField(todo.id, 'urgent')}
+          title="緊急フラグを切り替え"
+        >緊急</button>
+        <button
+          className={`chip chip-import${!todo.important ? ' off' : ''}`}
+          onClick={() => onToggleField(todo.id, 'important')}
+          title="重要フラグを切り替え"
+        >重要</button>
+      </div>
+
+      {/* Delete */}
+      <button className="del-btn" onClick={() => onDelete(todo.id)} title="削除">
+        <IconX size={13} />
+      </button>
+    </div>
+  );
+}
+
+/* ─────────────────────── MATRIX VIEW ─────────────────────── */
+function MatrixView({ todos, onToggleField, onDelete, onComplete, drag, actions }) {
+  return (
+    <div>
+      <div className="matrix-header">
+        <span className="matrix-title">
+          「重要なことは緊急ではなく、緊急なことは重要ではない」— ドワイト・アイゼンハワー
+        </span>
+      </div>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '44px 1fr 1fr',
+        gridTemplateRows: '40px 1fr 1fr',
+        gap: '10px',
+      }}>
+        <div />
+        <div className="axis-label" style={{ color: 'var(--q1)', letterSpacing:'1.5px', fontSize:'11px', fontWeight:700 }}>↑ 緊急</div>
+        <div className="axis-label" style={{ color: 'var(--text3)', letterSpacing:'1.5px', fontSize:'11px', fontWeight:700 }}>非緊急</div>
+        <div className="axis-label axis-side" style={{ color: 'var(--q2)', letterSpacing:'1.5px', fontSize:'11px', fontWeight:700 }}>重要 ↑</div>
+        <QuadrantCard q={QUADRANTS[0]} todos={todos} onDelete={onDelete} onComplete={onComplete} drag={drag} actions={actions} />
+        <QuadrantCard q={QUADRANTS[1]} todos={todos} onDelete={onDelete} onComplete={onComplete} drag={drag} actions={actions} />
+        <div className="axis-label axis-side" style={{ color: 'var(--text3)', letterSpacing:'1.5px', fontSize:'11px', fontWeight:700 }}>非重要</div>
+        <QuadrantCard q={QUADRANTS[2]} todos={todos} onDelete={onDelete} onComplete={onComplete} drag={drag} actions={actions} />
+        <QuadrantCard q={QUADRANTS[3]} todos={todos} onDelete={onDelete} onComplete={onComplete} drag={drag} actions={actions} />
+      </div>
+    </div>
+  );
+}
+
+function QuadrantCard({ q, todos, onDelete, onComplete, drag, actions }) {
+  const items = todos.filter(t => t.urgent === q.urgent && t.important === q.important);
+
+  return (
+    <div className="q-card" style={{ background: q.bg, borderColor: q.border }}>
+      <div className="q-card-head">
+        <div>
+          <div className="q-num" style={{ color: q.color }}>{q.num}</div>
+          <div className="q-name" style={{ color: q.color }}>{q.label}</div>
+          <div className="q-desc" style={{ color: q.color }}>{q.desc}</div>
+        </div>
+        <div className="q-badge">{q.en}</div>
+      </div>
+
+      <div className="q-hint" style={{ color: q.color }}>{q.hint}</div>
+
+      <div className="q-items">
+        {items.length === 0 ? (
+          <div className="q-empty">空です</div>
+        ) : items.map((t, i) => (
+          <QItem key={t.id} todo={t} rank={i + 1} color={q.color} isQ4={!!q.isQ4} onComplete={onComplete} onDelete={onDelete} drag={drag} actions={actions} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const Q4_ACTIONS = [
+  { key: 'eliminate', label: '🗑 削除',     title: 'この活動を完全になくす' },
+  { key: 'limit',     label: '⏱ 時間制限', title: '許容するが時間を制限する' },
+  { key: 'delegate',  label: '👤 委任',     title: '他の人に任せる' },
+  { key: 'later',     label: '🌙 後で',     title: 'Q1・Q2が終わった後にやる' },
+];
+
+function QItem({ todo, rank, color, isQ4, onComplete, onDelete, drag, actions }) {
+  const { onDragStart, onDragOver, onDrop, onDragEnd, dragOverId, dragId } = drag;
+  const isDragging = dragId.current === todo.id;
+  const isDragOver = dragOverId === todo.id;
+
+  return (
+    <div
+      className={`q-item${todo.completed ? ' completed' : ''}${isDragging ? ' dragging' : ''}${isDragOver ? ' drag-over' : ''}`}
+      draggable
+      onDragStart={e => onDragStart(todo.id, e)}
+      onDragOver={e => onDragOver(todo.id, e)}
+      onDrop={e => onDrop(todo.id, e)}
+      onDragEnd={onDragEnd}
+    >
+      <span className="rank-badge" style={{ color, opacity: 0.6, fontSize:'10px' }}>{rank}</span>
+      <button
+        className={`q-item-check${todo.completed ? ' done' : ''}`}
+        style={{ borderColor: todo.completed ? color : 'var(--text3)', background: todo.completed ? color : 'transparent' }}
+        onClick={() => onComplete(todo.id)}
+      >
+        {todo.completed && <IconCheck size={8} />}
+      </button>
+      <span className="q-item-text" style={{ color: todo.completed ? 'var(--text3)' : 'var(--text)' }}>
+        {todo.text}
+      </span>
+      <button className="q-item-del" onClick={() => onDelete(todo.id)}>
+        <IconX size={11} />
+      </button>
+
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+</script>
+</body>
+</html>
