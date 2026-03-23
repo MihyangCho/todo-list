@@ -437,6 +437,17 @@
       color: var(--text2);
     }
 
+    .q-star-badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 4px 10px;
+      border-radius: 5px;
+      background: rgba(201,169,110,0.15);
+      color: var(--accent);
+      border: 1px solid rgba(201,169,110,0.35);
+    }
+
     .q-hint {
       font-size: 11px;
       font-weight: 500;
@@ -669,7 +680,7 @@ const save = (d) => localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
 
 const QUADRANTS = [
   { urgent: true,  important: true,  label: '今すぐ実行',  desc: '緊急かつ重要',       en: 'DO FIRST',  num: 'I',   hint: '自分で対処しましょう。先延ばしにすると危機になります。',   color: 'var(--q1)', bg: 'var(--q1-bg)', border: 'var(--q1-b)' },
-  { urgent: false, important: true,  label: '計画を立てる', desc: '重要だが急ぎではない', en: 'SCHEDULE',  num: 'II',  hint: 'いつやるか、具体的なスケジュールを決めておきましょう。', color: 'var(--q2)', bg: 'var(--q2-bg)', border: 'var(--q2-b)' },
+  { urgent: false, important: true,  label: '計画を立てる', desc: '重要だが急ぎではない', en: 'SCHEDULE',  num: 'II',  hint: 'いつやるか、具体的なスケジュールを決めておきましょう。', star: true, color: 'var(--q2)', bg: 'var(--q2-bg)', border: 'var(--q2-b)' },
   { urgent: true,  important: false, label: '委任する',    desc: '緊急だが重要度が低い', en: 'DELEGATE',  num: 'III', hint: 'できれば他の人に任せ、自分の関与を減らしましょう。',     color: 'var(--q3)', bg: 'var(--q3-bg)', border: 'var(--q3-b)' },
   { urgent: false, important: false, label: '削除する',    desc: '非緊急 · 非重要',    en: 'DELETE',    num: 'IV',  hint: '価値を生まないタスクです。思い切って手放しましょう。', isQ4: true, color: 'var(--q4)', bg: 'var(--q4-bg)', border: 'var(--q4-b)' },
 ];
@@ -1090,14 +1101,17 @@ function QuadrantCard({ q, todos, onDelete, onComplete, drag, actions }) {
           <div className="q-name" style={{ color: q.color }}>{q.label}</div>
           <div className="q-desc" style={{ color: q.color }}>{q.desc}</div>
         </div>
-        <div className="q-badge">{q.en}</div>
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:'5px' }}>
+          {q.star && <div className="q-star-badge">★ 最重要</div>}
+          <div className="q-badge">{q.en}</div>
+        </div>
       </div>
 
       <div className="q-hint" style={{ color: q.color }}>{q.hint}</div>
 
       <div className="q-items">
         {items.length === 0 ? (
-          <div className="q-empty">空です</div>
+          <div className="q-empty">リストがありません</div>
         ) : items.map((t, i) => (
           <QItem key={t.id} todo={t} rank={i + 1} color={q.color} isQ4={!!q.isQ4} onComplete={onComplete} onDelete={onDelete} drag={drag} actions={actions} />
         ))}
